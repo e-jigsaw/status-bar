@@ -12,14 +12,14 @@ module.exports =
       DevModeView = require './dev-mode-view'
       @statusBar.appendLeft(new DevModeView())
 
+    @git = new GitView(@statusBar)
+    @statusBar.appendLeft(@git)
+
     @fileInfo = new FileInfoView(@statusBar)
     @statusBar.appendLeft(@fileInfo)
 
     @cursorPosition = new CursorPositionView(@statusBar)
     @statusBar.appendLeft(@cursorPosition)
-
-    @git = new GitView(@statusBar)
-    @statusBar.appendRight(@git)
 
   deactivate: ->
     @git?.destroy()
