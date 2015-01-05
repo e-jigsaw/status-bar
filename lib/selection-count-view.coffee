@@ -23,8 +23,8 @@ class SelectionCountView extends HTMLElement
   updateCount: ->
     count = @getActiveTextEditor()?.getSelectedText().length
     if count > 0
-      @textContent = "(#{count})"
+      @textContent = "#{count}"
     else
-      @textContent = ''
+      @textContent = '0'
 
 module.exports = document.registerElement('status-bar-selection', prototype: SelectionCountView.prototype, extends: 'div')
