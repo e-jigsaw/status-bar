@@ -69,7 +69,7 @@ module.exports =
 
     @git = new GitView()
     @git.initialize()
-    @statusBar.addRightTile(item: @git, priority: 0)
+    @statusBar.addLeftTile(item: @git, priority: 0)
 
   deactivate: ->
     @git?.destroy()
