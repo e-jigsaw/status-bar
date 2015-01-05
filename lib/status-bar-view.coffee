@@ -1,72 +1,110 @@
-{View} = require 'atom'
+{$} = require 'space-pen'
+Grim = require 'grim'
+{Disposable} = require 'atom'
+Tile = require './tile'
 
-module.exports =
-class StatusBarView extends View
-  @content: ->
-    @div class: 'status-bar tool-panel panel-bottom', =>
-      @div class: 'flexbox-repaint-hack', =>
-        @div outlet: 'rightPanel', class: 'status-bar-right pull-right'
-        @div outlet: 'leftPanel', class: 'status-bar-left'
+class StatusBarView extends HTMLElement
+  createdCallback: ->
+    @classList.add('status-bar')
 
-  serialize: ->
-    attached: @hasParent()
+    flexboxHackElement = document.createElement('div')
+    flexboxHackElement.classList.add('flexbox-repaint-hack')
+    @appendChild(flexboxHackElement)
+
+    @rightPanel = document.createElement('div')
+    @rightPanel.classList.add('status-bar-right', 'pull-right')
+    flexboxHackElement.appendChild(@rightPanel)
+
+    @leftPanel = document.createElement('div')
+    @leftPanel.classList.add('status-bar-left')
+    flexboxHackElement.appendChild(@leftPanel)
+
+    @leftTiles = []
+    @rightTiles = []
 
   initialize: (state) ->
-    atom.workspaceView.statusBar = this
-
     @bufferSubscriptions = []
-    @subscribe atom.workspaceView, 'pane-container:active-pane-item-changed', =>
+
+    @activeItemSubscription = atom.workspace.onDidChangeActivePaneItem =>
       @unsubscribeAllFromBuffer()
       @storeActiveBuffer()
       @subscribeAllToBuffer()
 
-      @trigger('active-buffer-changed')
+      @dispatchEvent(new CustomEvent('active-buffer-changed', bubbles: true))
 
     @storeActiveBuffer()
-
-    @attach() if state.attached
-
-  attach: ->
-    atom.workspaceView.appendToBottom(this) unless @hasParent()
+    this
 
   destroy: ->
+    @activeItemSubscription.dispose()
+    @unsubscribeAllFromBuffer()
     @remove()
-    atom.workspaceView.statusBar = null
 
-  toggle: ->
-    if @hasParent()
-      @detach()
-    else
-      @attach()
+  addLeftTile: (options) ->
+    newItem = options.item
+    newPriority = options?.priority ? @leftTiles[@leftTiles.length - 1].priority + 1
+    nextItem = null
+    for {priority, item}, index in @leftTiles
+      if priority > newPriority
+        nextItem = item
+        break
 
-  # Public: Append the view to the left side of the status bar.
+    newTile = new Tile(newItem, newPriority, @leftTiles)
+    @leftTiles.splice(index, 0, newTile)
+    newElement = atom.views.getView(newItem)
+    nextElement = atom.views.getView(nextItem)
+    @leftPanel.insertBefore(newElement, nextElement)
+    newTile
+
+  addRightTile: (options) ->
+    newItem = options.item
+    newPriority = options?.priority ? @rightTiles[0].priority + 1
+    nextItem = null
+    for {priority, item}, index in @rightTiles
+      if priority < newPriority
+        nextItem = item
+        break
+
+    newTile = new Tile(newItem, newPriority, @rightTiles)
+    @rightTiles.splice(index, 0, newTile)
+    newElement = atom.views.getView(newItem)
+    nextElement = atom.views.getView(nextItem)
+    @rightPanel.insertBefore(newElement, nextElement)
+    newTile
+
+  getLeftTiles: ->
+    @leftTiles
+
+  getRightTiles: ->
+    @rightTiles
+
+  # Deprecated
+
   appendLeft: (view) ->
-    @leftPanel.append(view)
+    Grim.deprecate("Use ::addLeftTile({item, priority}) instead.")
+    $(@leftPanel).append(view)
 
-  # Public: Prepend the view to the left side of the status bar.
   prependLeft: (view) ->
-    @leftPanel.prepend(view)
+    Grim.deprecate("Use ::addLeftTile({item, priority}) instead.")
+    $(@leftPanel).prepend(view)
 
-  # Public: Append the view to the right side of the status bar.
   appendRight: (view) ->
-    @rightPanel.append(view)
+    Grim.deprecate("Use ::addRightTile({item, priority}) instead.")
+    $(@rightPanel).append(view)
 
-  # Public: Prepend the view to the right side of the status bar.
   prependRight: (view) ->
-    @rightPanel.prepend(view)
+    Grim.deprecate("Use ::addRightTile({item, priority}) instead.")
+    $(@rightPanel).prepend(view)
 
-  # Public:
   getActiveBuffer: ->
     @buffer
 
-  # Public:
   getActiveItem: ->
     atom.workspace.getActivePaneItem()
 
   storeActiveBuffer: ->
     @buffer = @getActiveItem()?.getBuffer?()
 
-  # Public:
   subscribeToBuffer: (event, callback) ->
     @bufferSubscriptions.push([event, callback])
     @buffer.on(event, callback) if @buffer
@@ -80,3 +118,5 @@ class StatusBarView extends View
     return unless @buffer
     for [event, callback] in @bufferSubscriptions
       @buffer.off(event, callback)
+
+module.exports = document.registerElement('status-bar', prototype: StatusBarView.prototype)
