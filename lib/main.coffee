@@ -1,4 +1,4 @@
-{$} = require 'space-pen'
+{$} = require 'atom-space-pen-views'
 Grim = require 'grim'
 StatusBarView = require './status-bar-view'
 FileInfoView = require './file-info-view'
@@ -13,9 +13,6 @@ module.exports =
     @statusBar = new StatusBarView()
     @statusBar.initialize(state)
     @statusBarPanel = atom.workspace.addBottomPanel(item: @statusBar, priority: 0)
-
-    # Remove when legacy panel classes PR (atom/atom#4305) has been released
-    atom.views.getView(@statusBarPanel).classList.add("tool-panel", "panel-bottom")
 
     # Wrap status bar element in a jQuery wrapper for backwards compatibility
     wrappedStatusBar = $.extend $(@statusBar),
@@ -91,3 +88,15 @@ module.exports =
     @statusBar = null
 
     delete atom.__workspaceView.statusBar if atom.__workspaceView?
+
+  provideStatusBar: ->
+    addLeftTile: @statusBar.addLeftTile.bind(@statusBar)
+    addRightTile: @statusBar.addRightTile.bind(@statusBar)
+    getLeftTiles: @statusBar.getLeftTiles.bind(@statusBar)
+    getRightTiles: @statusBar.getRightTiles.bind(@statusBar)
+
+  # Depreciated method associated with previous Services API
+  # versioning that matched package version.
+  legacyProvideStatusBar: ->
+     Grim.deprecate("Use versions ^1.0.0 of status-bar Service API.")
+     @provideStatusBar()
