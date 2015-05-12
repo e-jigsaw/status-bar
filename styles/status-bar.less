@@ -34,6 +34,13 @@ status-bar {
   .status-bar-right {
     padding-left: @component-padding;
     overflow-x: auto;
+    .inline-block {
+      margin-right: 0;
+      margin-left: @component-padding;
+      & > .inline-block {
+        margin-left: 0;
+      }
+    }
   }
 
   // Limit inline-blocks from getting too long
