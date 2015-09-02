@@ -1,4 +1,5 @@
 {Disposable} = require 'atom'
+url = require 'url'
 
 class FileInfoView extends HTMLElement
   initialize: ->
@@ -15,7 +16,7 @@ class FileInfoView extends HTMLElement
     @subscribeToActiveItem()
 
     clickHandler = =>
-      text = @getActiveItem()?.getPath?() or @getActiveItem()?.getTitle?() or ''
+      text = @getActiveItemCopyText()
       atom.clipboard.write(text)
       setTimeout =>
         @handleCopiedTooltip()
@@ -26,12 +27,17 @@ class FileInfoView extends HTMLElement
 
   handleCopiedTooltip: ->
     @copiedTooltip?.dispose()
-    text = @getActiveItem()?.getPath?() or @getActiveItem()?.getTitle?() or ''
+    text = @getActiveItemCopyText()
     @copiedTooltip = atom.tooltips.add this,
       title: "Copied: #{text}"
       trigger: 'click'
       delay:
         show: 0
+
+  getActiveItemCopyText: ->
+    activeItem = @getActiveItem()
+    # An item path could be a url, but we only want to copy the `path` part of it.
+    url.parse(activeItem?.getPath?() or '').path or activeItem?.getTitle?() or ''
 
   subscribeToActiveItem: ->
     @modifiedSubscription?.dispose()
